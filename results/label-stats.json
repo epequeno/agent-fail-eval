@@ -1,0 +1,64 @@
+{
+  "total_labeled": 150,
+  "meaningful": 102,
+  "meaningful_rate": 0.68,
+  "category_correct_rate": 0.667,
+  "meaningful_n": 102,
+  "lost_confusion": {
+    "tp": 92,
+    "fp": 7,
+    "fn": 0,
+    "tn": 3
+  },
+  "lost_precision": 0.929,
+  "lost_recall": 1.0,
+  "impact_distribution": {
+    "medium": 56,
+    "high": 7,
+    "low": 29
+  },
+  "by_category": {
+    "user_constraint": {
+      "n": 47,
+      "lost_gt": 46,
+      "precision": 1.0,
+      "recall": 1.0,
+      "impact": {
+        "medium": 27,
+        "high": 6,
+        "low": 13
+      }
+    },
+    "error_state": {
+      "n": 24,
+      "lost_gt": 24,
+      "precision": 1.0,
+      "recall": 1.0,
+      "impact": {
+        "medium": 15,
+        "low": 8,
+        "high": 1
+      }
+    },
+    "file_reference": {
+      "n": 20,
+      "lost_gt": 11,
+      "precision": 0.611,
+      "recall": 1.0,
+      "impact": {
+        "low": 5,
+        "medium": 6
+      }
+    },
+    "assistant_finding": {
+      "n": 11,
+      "lost_gt": 11,
+      "precision": 1.0,
+      "recall": 1.0,
+      "impact": {
+        "medium": 8,
+        "low": 3
+      }
+    }
+  }
+}

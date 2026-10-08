@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+*.egg-info/
+
+# Test cache
+.pytest_cache/
+
+# Un-redacted result files (contain real file paths — keep local)
+results/compaction-loss-report.json
+results/vuln-window-report.json
+results/claude-compaction-loss-report.json
+results/claude-vuln-window-report.json
+results/label-sample.json
+results/claude-label-sample.json
+
+# OS files
+.DS_Store
