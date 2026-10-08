@@ -189,6 +189,25 @@ Per-category breakdown (meaningful facts only):
 
 **Extractor precision improvements (v2):** noise filters reduced total facts from 284,947 to 170,209 (40% noise removed). Conversational acknowledgments filtered from user constraints, bare code fragments filtered from assistant findings, build progress and informational notes filtered from error states. The `_fact_in_summary` threshold was raised from 30% to 50% term overlap, and common stopwords are now filtered from summary matching.
 
+### Claude Code Labeling (85-fact cross-harness validation)
+
+A second labeling pass on Claude Code sessions (2 categories: `user_constraint` + `assistant_finding`) validates the cross-harness numbers. Stats at `results/claude-label-stats.json`.
+
+| Metric | pi-agent (150 facts) | Claude Code (85 facts) |
+|--------|----------------------|----------------------|
+| Meaningful | 102/150 (68%) | 60/85 (70.6%) |
+| Category correct | 100/150 (67%) | 23/85 (27.1%) |
+| Lost precision | 92.9% | **100%** |
+| Lost recall | **100%** | 95.7% |
+| High-impact lost | 7 | 0 |
+
+**Key differences:**
+- **Category accuracy is much lower** (27% vs 67%) — the Claude Code extractor misclassifies most extracted text as `user_constraint` when it's actually work logs, status descriptions, or headings. The pi-agent extractor benefits from record-type fields that distinguish user messages from assistant output; Claude Code's format blurs this distinction.
+- **Lost precision is perfect** (100% vs 92.9%) — no false alarms. The 7 pi-agent false alarms were all `file_reference` keyword matches, a category absent in Claude Code.
+- **Lost recall drops slightly** (95.7% vs 100%) — 2 false negatives in `assistant_finding`: the evaluator said the fact was in the summary, but human judgment said it wasn't. Both are process narration that the summary paraphrased rather than preserved verbatim.
+- **No high-impact facts** (0 vs 7) — the 15 medium-impact facts are all implementation requirements or technical observations. The absence of high-impact lost facts may reflect Claude Code's more aggressive summarization (68.5% vs 87% loss), which preserves more content but at lower fidelity.
+- **`assistant_finding` is heavily noisy** — 13 of 30 are meaningful (43%); the rest are process narration ("Let me...", "Now let me..."). This is a Claude Code-specific pattern: the assistant narrates its actions in text blocks, which the extractor treats as findings.
+
 
 ## Architecture
 

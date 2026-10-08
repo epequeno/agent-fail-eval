@@ -1,0 +1,43 @@
+{
+  "total_labeled": 85,
+  "meaningful": 60,
+  "meaningful_rate": 0.706,
+  "category_correct_rate": 0.271,
+  "meaningful_n": 60,
+  "lost_confusion": {
+    "tp": 45,
+    "fp": 0,
+    "fn": 2,
+    "tn": 13
+  },
+  "lost_precision": 1.0,
+  "lost_recall": 0.957,
+  "impact_distribution": {
+    "low": 45,
+    "medium": 15
+  },
+  "by_category": {
+    "assistant_finding": {
+      "n": 13,
+      "lost_gt": 10,
+      "precision": 1.0,
+      "recall": 0.8,
+      "impact": {
+        "high": 0,
+        "medium": 5,
+        "low": 8
+      }
+    },
+    "user_constraint": {
+      "n": 47,
+      "lost_gt": 39,
+      "precision": 1.0,
+      "recall": 1.0,
+      "impact": {
+        "high": 0,
+        "medium": 10,
+        "low": 37
+      }
+    }
+  }
+}
