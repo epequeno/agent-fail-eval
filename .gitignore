@@ -8,13 +8,13 @@ __pycache__/
 # Test cache
 .pytest_cache/
 
-# Un-redacted result files (contain real file paths — keep local)
-results/compaction-loss-report.json
-results/vuln-window-report.json
-results/claude-compaction-loss-report.json
-results/claude-vuln-window-report.json
-results/label-sample.json
-results/claude-label-sample.json
+# Per-session / per-boundary reports, labeled samples, and generated fixtures
+# contain text or identifiers from private sessions — keep local.
+# Only aggregate stats are published.
+results/*
+!results/cross-harness-comparison.json
+!results/label-stats.json
+!results/claude-label-stats.json
 
 # OS files
 .DS_Store

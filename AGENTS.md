@@ -82,7 +82,7 @@ The `redactor.py` module provides `SessionRedactor` for sanitizing session conte
 - 115 sessions, 213 compaction boundaries, 170,209 facts (after noise filtering)
 - Compaction loses 86% of facts; user constraints 96.5%; error states 93.0%
 - Keyword retrieval recovers 64% of lost facts (28% of lost user constraints); REPL "recovers 100%" — but this is circular (search terms derived from extracted facts themselves), not a real mitigation result
-- Vulnerability windows: 17/115 sessions (14.8%) have a compaction boundary dropping a behavioral or approval constraint; 21 windows, 26 dropped constraints. Counts-only report at `results/vuln-window-report-redacted.json`.
+- Vulnerability windows: 17/115 sessions (14.8%) have a compaction boundary dropping a behavioral or approval constraint; 21 windows, 26 dropped constraints. Aggregate counts in `results/cross-harness-comparison.json`; per-window reports stay local (gitignored).
 
 ## Fact Labeling (Priority 1: Precision/Recall Validation)
 

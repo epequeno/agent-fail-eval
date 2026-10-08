@@ -79,7 +79,7 @@ From 115 real pi-agent sessions, 213 compaction boundaries, 170,209 heuristic fa
 - Strongest product-relevant signal: 1,531 user constraints extracted; **96.5%** absent from summaries; keyword retrieval recovers only **28.1%** of lost user constraints
 - Error states: 1,319 extracted; **93.0%** absent from summaries; keyword retrieval recovers **39.4%**
 - Full-history forensic query "recovers" **100%** of extracted facts — **this is a circular upper bound**, not a real mitigation result. The query terms are derived from the facts themselves, so it cannot miss by construction. Do not cite as evidence of a working mitigation.
-- Vulnerability windows: **17 of 115 sessions (14.8%)** have at least one compaction boundary that drops a behavioral or approval constraint absent from the summary — 21 windows, 26 dropped constraints. Counts only (no session text) at `results/vuln-window-report-redacted.json`.
+- Vulnerability windows: **17 of 115 sessions (14.8%)** have at least one compaction boundary that drops a behavioral or approval constraint absent from the summary — 21 windows, 26 dropped constraints. Aggregate counts in `results/cross-harness-comparison.json`.
 - **Cross-harness validation**: compaction loss confirmed in a second harness. Claude Code (65 sessions, 223 boundaries, 27,945 facts): **73.6%** of facts omitted by compaction summaries; user constraints **72.7%** omitted; keyword retrieval recovers **62.6%** of lost facts (**69.3%** of lost user constraints). Vulnerability windows in **44.6%** of sessions (29/65), 51 windows, 76 dropped constraints. Full comparison at `results/cross-harness-comparison.json`.
 
 
@@ -139,7 +139,7 @@ The most cited number from this project is that **96.5% of extracted user constr
 
 ### Data freshness note
 
-The `results/*-redacted.json` files were regenerated on 2026-10-08 with the v2 extractor and match the headline numbers above. The vulnerability-window reports contain counts and constraint types only; session text, project names, and session IDs are removed or hashed before publishing.
+Only aggregate results are published (`results/cross-harness-comparison.json`, `results/label-stats.json`, `results/claude-label-stats.json`), regenerated 2026-10-08 with the v2 extractor. Per-session and per-boundary reports, labeled fact samples, and the underlying session logs are not published because they contain verbatim text from private projects. The synthetic attack fixtures are regenerated locally by `afe attack`. Raw data for reproduction is available on request.
 
 ## Fact Labeling (Precision/Recall Validation)
 
