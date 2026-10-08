@@ -67,20 +67,20 @@ uv run afe label stats results/label-sample.json -o results/label-stats.json
 | Strategy | What it simulates | Current result |
 |----------|------------------|----------------|
 | Full history | Oracle baseline — all extracted facts available | 100% availability (trivially — facts came from this history) |
-| Compaction only | Only the compaction summary | 13% availability |
-| Retrieval | Summary + keyword search over dropped segment | 69% recovery of facts absent from summaries; 22% recovery for user constraints |
+| Compaction only | Only the compaction summary | 14% availability |
+| Retrieval | Summary + keyword search over dropped segment | 64% recovery of facts absent from summaries; 28% recovery for user constraints |
 | Full-history forensic query | Code-based search over dropped history using full-text matching, verbose filtering, and structural queries | 100% recovery — **but this is circular**: search terms are derived from the extracted facts themselves, so it cannot miss. This is an internal sanity-check upper bound, not evidence of a working deployed mitigation. Do not cite next to real numbers in external material. |
 
-## Key Results (as of 2026-07-09)
+## Key Results (as of 2026-10-08)
 
 From 115 real pi-agent sessions, 213 compaction boundaries, 170,209 heuristic facts (after noise filtering):
 
 - Compaction summaries omit **86%** of extracted facts overall
 - Strongest product-relevant signal: 1,531 user constraints extracted; **96.5%** absent from summaries; keyword retrieval recovers only **28.1%** of lost user constraints
-- Error states: 1,319 extracted; **93.5%** absent from summaries; keyword retrieval recovers **39.7%**
+- Error states: 1,319 extracted; **93.0%** absent from summaries; keyword retrieval recovers **39.4%**
 - Full-history forensic query "recovers" **100%** of extracted facts — **this is a circular upper bound**, not a real mitigation result. The query terms are derived from the facts themselves, so it cannot miss by construction. Do not cite as evidence of a working mitigation.
-- Vulnerability windows: **17 of 115 sessions (14.8%)** have at least one compaction boundary that drops a behavioral or approval constraint absent from the summary — 21 windows, 26 dropped constraints. Report at `results/vuln-window-report.json`.
-- **Cross-harness validation**: compaction loss confirmed in a second harness. Claude Code (65 sessions, 223 boundaries, 28,847 facts): **68.5%** of facts omitted by compaction summaries; user constraints **65.2%** omitted; retrieval recovers **60.8%** of lost facts. Vulnerability windows in **44.6%** of sessions (29/65), 51 windows, 78 dropped constraints. Full comparison at `results/cross-harness-comparison.json`.
+- Vulnerability windows: **17 of 115 sessions (14.8%)** have at least one compaction boundary that drops a behavioral or approval constraint absent from the summary — 21 windows, 26 dropped constraints. Counts only (no session text) at `results/vuln-window-report-redacted.json`.
+- **Cross-harness validation**: compaction loss confirmed in a second harness. Claude Code (65 sessions, 223 boundaries, 27,945 facts): **73.6%** of facts omitted by compaction summaries; user constraints **72.7%** omitted; keyword retrieval recovers **62.6%** of lost facts (**69.3%** of lost user constraints). Vulnerability windows in **44.6%** of sessions (29/65), 51 windows, 76 dropped constraints. Full comparison at `results/cross-harness-comparison.json`.
 
 
 ## Methodology: What Counts as a Fact, and What the Numbers Mean
@@ -112,8 +112,8 @@ This is deliberately weak. The point is to establish a **floor** — the minimum
 
 | Harness | Facts lost after compaction | Recovered by keyword retrieval | Still lost |
 |---------|---------------------------|-------------------------------|-----------|
-| pi-agent | 86% | 69% of lost facts | 31% of lost facts unrecoverable |
-| Claude Code | 68.5% | 61% of lost facts | 39% of lost facts unrecoverable |
+| pi-agent | 86% | 64% of lost facts | 36% of lost facts unrecoverable |
+| Claude Code | 73.6% | 63% of lost facts | 37% of lost facts unrecoverable |
 
 For user constraints specifically, keyword retrieval recovers only **28.1%** of lost constraints (pi-agent). This is the worst-performing category — constraints are often phrased differently when referenced later ("use a feature branch" vs. "don't push to main"), so exact-term matching misses them. This is exactly the gap that embeddings + reranking would close, and it's why the keyword baseline matters: it shows where lexical matching fails and semantic matching is needed.
 
@@ -135,9 +135,11 @@ The most cited number from this project is that **96.5% of extracted user constr
 - The tail risk is real. The 7 high-impact lost facts include: don't-push constraints, region requirements, credential configurations, feature requirements, decision rules, and a keystore failure that blocks release. Each is a concrete scenario where compaction removed information that would have changed a downstream decision.
 - The gap is actionable. Keyword retrieval recovers 28% of lost user constraints; a better retrieval system (embeddings, reranking, or simply passing the full dropped segment) would recover more. The 96.5% omission rate is the problem size, not the solution claim.
 
+**Omission is not harm.** The 96.5% figure sizes the problem; it does not establish a failure rate. Boundary-local replay work (TRACE, below) finds only a weak link between compaction and measurable downstream harm, and a component study of coding harnesses ([2609.20804](https://arxiv.org/abs/2609.20804)) found context management mostly helps by preventing overflow failures.
+
 ### Data freshness note
 
-The cross-harness comparison file (`results/cross-harness-comparison.json`) was generated before the v2 extractor noise filters were applied. Its pi-agent total fact count (284,947) reflects pre-v2 extraction; the README headline numbers (170,209 facts) reflect post-v2 extraction with noise filters. The loss and recovery rates are consistent between the two because noise facts are omitted at the same rate as real ones. The Claude Code numbers in the comparison file are unaffected (Claude Code extraction did not change between v1 and v2).
+The `results/*-redacted.json` files were regenerated on 2026-10-08 with the v2 extractor and match the headline numbers above. The vulnerability-window reports contain counts and constraint types only; session text, project names, and session IDs are removed or hashed before publishing.
 
 ## Fact Labeling (Precision/Recall Validation)
 
@@ -181,7 +183,7 @@ Per-category breakdown (meaningful facts only):
 | assistant_finding | 11 | 11 | 100% | 100% | 0/8/3 |
 
 **Key findings:**
-- **Lost recall is 100%** — the evaluator catches every truly-lost fact. The reported omission rates (86% overall, 96.5% user constraints, 93.5% error states) are now exact, not just lower bounds.
+- **Lost recall is 100%** — the evaluator catches every truly-lost fact. The reported omission rates (86% overall, 96.5% user constraints, 93.0% error states) are now exact, not just lower bounds.
 - **Lost precision is 92.9%** — 7 false alarms, all from `file_reference` category (keyword-matching finds the filename in the summary even though the fact was classified as "lost" by the bucket).
 - **Extractor precision is 68%** — 32% of extracted "facts" are noise (conversational acks, bare code fragments, build output). The `assistant_finding` category is worst: 20/30 are bare code lines with no standalone meaning.
 - **Category accuracy is 67%** — requests/questions misclassified as user constraints, build output misclassified as error states, math data misclassified as constraints.
@@ -205,7 +207,7 @@ A second labeling pass on Claude Code sessions (2 categories: `user_constraint` 
 - **Category accuracy is much lower** (27% vs 67%) — the Claude Code extractor misclassifies most extracted text as `user_constraint` when it's actually work logs, status descriptions, or headings. The pi-agent extractor benefits from record-type fields that distinguish user messages from assistant output; Claude Code's format blurs this distinction.
 - **Lost precision is perfect** (100% vs 92.9%) — no false alarms. The 7 pi-agent false alarms were all `file_reference` keyword matches, a category absent in Claude Code.
 - **Lost recall drops slightly** (95.7% vs 100%) — 2 false negatives in `assistant_finding`: the evaluator said the fact was in the summary, but human judgment said it wasn't. Both are process narration that the summary paraphrased rather than preserved verbatim.
-- **No high-impact facts** (0 vs 7) — the 15 medium-impact facts are all implementation requirements or technical observations. The absence of high-impact lost facts may reflect Claude Code's more aggressive summarization (68.5% vs 87% loss), which preserves more content but at lower fidelity.
+- **No high-impact facts** (0 vs 7) — the 15 medium-impact facts are all implementation requirements or technical observations. The absence of high-impact lost facts may reflect Claude Code's more aggressive summarization (73.6% vs 86% loss), which preserves more content but at lower fidelity.
 - **`assistant_finding` is heavily noisy** — 13 of 30 are meaningful (43%); the rest are process narration ("Let me...", "Now let me..."). This is a Claude Code-specific pattern: the assistant narrates its actions in text blocks, which the extractor treats as findings.
 
 
@@ -233,9 +235,42 @@ This is a **single-operator case study**, not a controlled experiment. The resul
 - **Single labeler** — the 150-fact precision/recall validation was labeled by one person. Inter-rater reliability (Cohen's κ) requires a second labeler on the same sample. The `afe label annotate` tool supports this (resumable, same JSON format).
 - **Heuristic fact extractor** — the FactExtractor uses keyword and regex patterns, not semantic understanding. Extractor precision is 68% (32% noise); category accuracy is 67% (1/3 misclassified). The noise filters (v2) reduce false positives but do not eliminate them. A model-based extractor would likely improve precision but would require its own validation.
 - **Heuristic constraint classifier** — the vulnerability window detector uses keyword taxonomy (behavioral_rule, approval_gate, scope_limit, format_requirement). It misclassifies some error messages and non-constraint text. An error-message negative filter reduces but does not eliminate false positives. The reported vulnerability window counts (17/115 pi sessions, 29/65 Claude Code) are not human-validated.
-- **No downstream task validation** — the methodology measures fact survival after compaction, not whether lost facts actually cause task failures. A lost user constraint that is never needed again is harmless; one that is needed at the next decision point is critical. The labeling includes a `would_loss_matter` field (low/medium/high) as a proxy, but actual task-level outcome tracking is a different kind of study.
+- **No downstream task validation** — the methodology measures fact survival after compaction, not whether lost facts cause task failures. Boundary-local replay studies exist (TRACE, Min et al. 2026, [2608.06503](https://arxiv.org/abs/2608.06503); public corpus of 590 AppWorld boundaries analyzed in [2610.08722](https://arxiv.org/abs/2610.08722)) and report that pre-boundary history predicts post-compaction harm only weakly (AUROC 0.66). They use AppWorld, not real coding sessions. The `would_loss_matter` label here is a human-judged proxy only. See [Next Steps](#next-steps).
 - **Claude Code partial category coverage** — the FactExtractor's `file_reference` and `error_state` categories depend on pi-agent-specific record fields. Claude Code sessions produce only `user_constraint` and `assistant_finding` facts. Claude Code omission rates are therefore not directly comparable to pi-agent rates at the category level.
-- **REPL strategy is circular** — the full-history forensic query "recovers" 100% of facts by construction (search terms are derived from the facts themselves). This is an internal sanity-check upper bound, not evidence of a working mitigation. Do not cite next to real retrieval numbers.
+- **REPL strategy is circular** — the full-history forensic query "recovers" 100% of facts by construction (search terms are derived from the facts themselves). This is an internal sanity-check upper bound, not evidence of a working mitigation. Do not cite next to real retrieval numbers. Real lossless-pointer or programmatic-context designs exist to compare against: LCM ([2605.04050](https://arxiv.org/abs/2605.04050)), Scroll ([2608.21690](https://arxiv.org/abs/2608.21690)), RLM ([2512.24601](https://arxiv.org/abs/2512.24601)).
+
+## Related Work
+
+Last surveyed 2026-10-08 (arXiv, HF Papers, Semantic Scholar; abstracts only, not a systematic review, Semantic Scholar citation pass was partial due to rate limiting).
+
+**Closest prior work — compaction loses constraints**
+- *The Compaction Cliff in Long-Running AI Agent Memory* ([2608.22752](https://arxiv.org/abs/2608.22752)): reports that Claude Code `/compact` preserves 53% of safety rules after one round and 10% after five (20 production agent configurations), and proposes type-aware retention. Differs from this project: curated rule sets and repeated rounds, versus real session logs, extracted facts, and single boundaries here. Directionally consistent with the user-constraint omission measured here.
+- *Nautilus Compass* ([2605.09863](https://arxiv.org/abs/2605.09863)): states that production coding agents forget user-specified constraints over long sessions; drift detector built from real Claude Code traces.
+
+**Boundary-local evaluation**
+- TRACE ([2608.06503](https://arxiv.org/abs/2608.06503)): evaluates individual compaction events via paired closed-loop continuations; reports compression weakening the influence of recent interactions (more blocked and repeated actions). Corpus analysis: [2610.08722](https://arxiv.org/abs/2610.08722). Domain is AppWorld.
+
+**Security at the compression boundary**
+- *Relinking* ([2606.21732](https://arxiv.org/abs/2606.21732)): the summarizer assembles benign fragments into a malicious instruction (86.9% reported success). The vulnerability windows here are the complementary failure: the summarizer drops constraints, which opens an attack surface.
+
+**Alternatives to lossy summarization**
+- LCM ([2605.04050](https://arxiv.org/abs/2605.04050)), Scroll ([2608.21690](https://arxiv.org/abs/2608.21690)), RLM ([2512.24601](https://arxiv.org/abs/2512.24601)): lossless pointers or programmatic context.
+- *The Complexity Trap* ([2508.21433](https://arxiv.org/abs/2508.21433)): observation masking matches LLM summarization on SWE-bench Verified at lower cost.
+- *An Empirical Study of Harness Design for Coding Agents* ([2609.20804](https://arxiv.org/abs/2609.20804)): staged elision then summarization is most efficient; making elided content recoverable yielded no accuracy gain because models rarely use it. This challenges the assumption here that better retrieval would close the gap.
+
+Not found in this survey (title/abstract search only, so not a novelty claim): per-fact survival rates across real compaction summaries from two harnesses with a human-labeled precision/recall check on the extractor.
+
+## Next Steps
+
+Prioritized in light of the TRACE papers and The Compaction Cliff. All are proposals, none implemented.
+
+1. **Observational downstream check (no re-execution).** For each vulnerability window, test whether post-boundary actions in the same log contradict the dropped constraint (e.g. a push after a dropped don't-push rule). Uses existing logs and turns the 7 high-impact labels into a measured violation rate. TRACE replays from re-executed state; session logs here cannot be re-executed, so this is the feasible approximation.
+2. **Replay the public TRACE corpus through `afe`.** Run the fact extractor on its 590 boundaries and test whether fact-loss rate predicts the next-action burden TRACE records. This tests whether omission predicts harm in any setting, since [2610.08722](https://arxiv.org/abs/2610.08722) found the history-based predictors weak.
+3. **Multi-round survival.** The Compaction Cliff reports decay across repeated rounds. Track each constraint across successive boundaries in the same session instead of one boundary at a time.
+4. **Replace the circular REPL baseline** with a real comparator: observation masking (Complexity Trap), type-aware retention (Compaction Cliff), or lossless pointers (LCM).
+5. **Replace keyword `_fact_in_summary` matching** with an LLM or embedding judge validated against the human labels, and add a second labeler for Cohen's kappa.
+6. **Fix Claude Code extractor category accuracy** (27% in the 85-fact labeling) before using per-category Claude numbers externally.
+7. **Widen operators.** All 180 sessions come from one developer.
 
 ## Research Context
 

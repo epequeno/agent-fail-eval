@@ -1,23 +1,23 @@
 {
-  "generated_at": "2026-10-07T19:15:37.450627",
+  "generated_at": "2026-10-08T07:26:46.900244",
   "harnesses": {
     "pi-agent": {
-      "sessions_dir": "~/.pi/agent/sessions/",
+      "sessions_dir": "<pi-agent sessions dir>",
       "sessions_with_compaction": 115,
       "compaction_boundaries": 213,
-      "total_facts": 284947,
-      "compaction_loss_rate": 0.8698670279034346,
-      "retrieval_recovery_rate": 0.6927533425318518,
-      "retrieval_still_lost": 76156,
+      "total_facts": 170209,
+      "compaction_loss_rate": 0.8595315171348166,
+      "retrieval_recovery_rate": 0.6358851674641148,
+      "retrieval_still_lost": 53270,
       "by_category": {
         "user_constraint": {
-          "total": 1943,
-          "compaction_lost": 1838,
-          "retrieval_recovered": 398,
-          "retrieval_lost": 1440,
-          "compaction_loss_rate": 0.9459598558929491,
-          "retrieval_recovery_rate": 0.21653971708378672,
-          "retrieval_loss_rate": 0.7411219763252702
+          "total": 1531,
+          "compaction_lost": 1477,
+          "retrieval_recovered": 415,
+          "retrieval_lost": 1062,
+          "compaction_loss_rate": 0.9647289353363815,
+          "retrieval_recovery_rate": 0.2809749492213947,
+          "retrieval_loss_rate": 0.6936642717178315
         },
         "file_reference": {
           "total": 12968,
@@ -29,48 +29,48 @@
           "retrieval_loss_rate": 0.0
         },
         "error_state": {
-          "total": 1422,
-          "compaction_lost": 1199,
-          "retrieval_recovered": 453,
-          "retrieval_lost": 746,
-          "compaction_loss_rate": 0.8431786216596343,
-          "retrieval_recovery_rate": 0.377814845704754,
-          "retrieval_loss_rate": 0.5246132208157525
+          "total": 1319,
+          "compaction_lost": 1227,
+          "retrieval_recovered": 483,
+          "retrieval_lost": 744,
+          "compaction_loss_rate": 0.9302501895375285,
+          "retrieval_recovery_rate": 0.39364303178484106,
+          "retrieval_loss_rate": 0.5640636846095527
         },
         "assistant_finding": {
-          "total": 268614,
-          "compaction_lost": 243673,
-          "retrieval_recovered": 169703,
-          "retrieval_lost": 73970,
-          "compaction_loss_rate": 0.9071492922930301,
-          "retrieval_recovery_rate": 0.6964374386985838,
-          "retrieval_loss_rate": 0.27537656265123933
+          "total": 154391,
+          "compaction_lost": 142440,
+          "retrieval_recovered": 90976,
+          "retrieval_lost": 51464,
+          "compaction_loss_rate": 0.9225926381719142,
+          "retrieval_recovery_rate": 0.63869699522606,
+          "retrieval_loss_rate": 0.3333354923538289
         }
       },
       "vuln_windows": {
         "sessions_analyzed": 115,
-        "sessions_with_windows": 18,
-        "total_windows": 22,
-        "dropped_constraints": 27
+        "sessions_with_windows": 17,
+        "total_windows": 21,
+        "dropped_constraints": 26
       }
     },
     "claude-code": {
-      "sessions_dir": "~/Library/Application Support/21st-desktop/claude-sessions/",
+      "sessions_dir": "<claude-code sessions dir>",
       "sessions_with_compaction": 65,
       "compaction_boundaries": 223,
-      "total_facts": 28847,
-      "compaction_loss_rate": 0.6851665684473256,
-      "retrieval_recovery_rate": 0.6076903617505692,
-      "retrieval_still_lost": 7754,
+      "total_facts": 27945,
+      "compaction_loss_rate": 0.7355519770978708,
+      "retrieval_recovery_rate": 0.6263682802237899,
+      "retrieval_still_lost": 7680,
       "by_category": {
         "user_constraint": {
-          "total": 16701,
-          "compaction_lost": 10886,
-          "retrieval_recovered": 7257,
-          "retrieval_lost": 3629,
-          "compaction_loss_rate": 0.6518172564517095,
-          "retrieval_recovery_rate": 0.6666360462979974,
-          "retrieval_loss_rate": 0.21729237770193402
+          "total": 16154,
+          "compaction_lost": 11739,
+          "retrieval_recovered": 8135,
+          "retrieval_lost": 3604,
+          "compaction_loss_rate": 0.7266930791135322,
+          "retrieval_recovery_rate": 0.6929891813612744,
+          "retrieval_loss_rate": 0.22310263711774173
         },
         "file_reference": {
           "total": 0,
@@ -91,29 +91,29 @@
           "retrieval_loss_rate": 0.0
         },
         "assistant_finding": {
-          "total": 12146,
-          "compaction_lost": 8879,
-          "retrieval_recovered": 4754,
-          "retrieval_lost": 4125,
-          "compaction_loss_rate": 0.7310225588671168,
-          "retrieval_recovery_rate": 0.5354206554792207,
-          "retrieval_loss_rate": 0.33961798122838793
+          "total": 11791,
+          "compaction_lost": 8816,
+          "retrieval_recovered": 4740,
+          "retrieval_lost": 4076,
+          "compaction_loss_rate": 0.7476889152743618,
+          "retrieval_recovery_rate": 0.5376588021778584,
+          "retrieval_loss_rate": 0.3456873886862861
         }
       },
       "vuln_windows": {
         "sessions_analyzed": 65,
         "sessions_with_windows": 29,
         "total_windows": 51,
-        "dropped_constraints": 78
+        "dropped_constraints": 76
       }
     }
   },
   "key_findings": [
-    "Compaction loss confirmed across both harnesses: 87% (pi) vs 68.5% (claude). Both lose the majority of extracted facts.",
-    "User constraint omission is high in both: 94.6% (pi) vs 65.2% (claude). Pi-agent summaries are significantly worse at preserving user constraints.",
-    "Retrieval recovery rates are similar: 69.3% (pi) vs 60.8% (claude). Both leave substantial gaps.",
-    "Vulnerability windows found in both: 15.7% of pi sessions vs 44.6% of claude sessions. Claude Code shows a higher rate, likely due to more sessions with multiple compactions.",
-    "Claude Code has fewer fact categories (2 vs 4) because the Claude parser does not populate file_reference or error_state categories \u2014 the FactExtractor depends on record-type fields specific to pi-agent format.",
-    "Pi-agent has 10x more total facts (284,947 vs 28,847) due to heavier assistant_finding extraction from tool results."
+    "Compaction loss confirmed across both harnesses: 86.0% (pi) vs 73.6% (claude). Both lose the majority of extracted facts.",
+    "User constraint omission: 96.5% (pi) vs 72.7% (claude).",
+    "Keyword retrieval recovery of lost facts: 63.6% (pi) vs 62.6% (claude). For lost user constraints: 28.1% (pi) vs 69.3% (claude).",
+    "Sessions with vulnerability windows: 14.8% (17/115) pi vs 44.6% (29/65) claude. Window counts are keyword-classifier output, not human-validated.",
+    "Claude Code has fewer fact categories (2 vs 4) because the Claude parser does not populate file_reference or error_state; category-level rates are not directly comparable.",
+    "The REPL strategy recovers 100% by construction (search terms derive from the facts); it is a sanity-check upper bound, not a mitigation result."
   ]
 }

@@ -80,13 +80,13 @@ The `redactor.py` module provides `SessionRedactor` for sanitizing session conte
 ## Results Summary
 
 - 115 sessions, 213 compaction boundaries, 170,209 facts (after noise filtering)
-- Compaction loses 86% of facts; user constraints 96.5%; error states 93.5%
-- Retrieval recovers 64% of lost facts; REPL "recovers 100%" — but this is circular (search terms derived from extracted facts themselves), not a real mitigation result
-- Vulnerability windows: 17/115 sessions (14.8%) have a compaction boundary dropping a behavioral or approval constraint; 21 windows, 26 dropped constraints. Report at `results/vuln-window-report.json`.
+- Compaction loses 86% of facts; user constraints 96.5%; error states 93.0%
+- Keyword retrieval recovers 64% of lost facts (28% of lost user constraints); REPL "recovers 100%" — but this is circular (search terms derived from extracted facts themselves), not a real mitigation result
+- Vulnerability windows: 17/115 sessions (14.8%) have a compaction boundary dropping a behavioral or approval constraint; 21 windows, 26 dropped constraints. Counts-only report at `results/vuln-window-report-redacted.json`.
 
 ## Fact Labeling (Priority 1: Precision/Recall Validation)
 
-The headline numbers (94.6% user constraint omission, 84.3% error state omission) are heuristic-extractor output with no relevance filter. The `afe label` tool generates a stratified sample of 150 facts for human labeling to measure extractor precision/recall. **Labeling is complete** (150/150, human-validated); stats at `results/label-stats.json`.
+The headline numbers (96.5% user constraint omission, 93.0% error state omission) are heuristic-extractor output with no relevance filter. The `afe label` tool generates a stratified sample of 150 facts for human labeling to measure extractor precision/recall. **Labeling is complete** (150/150, human-validated); stats at `results/label-stats.json`.
 
 **Stratified sample** (deterministic, seed=42):
 
@@ -119,9 +119,9 @@ Sample labeled (150/150). Results: lost-fact precision 92.9%, lost-fact recall 1
 
 ## Cross-Harness Scope
 
-Business-plan validation strategy (see `the private research vault`, "Immediate Research Priorities") requires porting to at least one more harness before external claims. **Claude Code is now ported.**
+Business-plan validation strategy (kept in the private research vault, "Immediate Research Priorities") requires porting to at least one more harness before external claims. **Claude Code is now ported.**
 
-- **Claude Code** — **DONE**. Session data found at `~/Library/Application Support/21st-desktop/claude-sessions/` (not `~/.claude/projects/` — that only has session-index.json metadata). Compaction mechanism: `system` record with `subtype: "compact_boundary"`, `compactMetadata.preTokens`, and a synthetic `user` message immediately after containing the summary (starts with "This session is being continued from a previous conversation..."). Parser: `claude_parser.py` (`ClaudeCodeLoader`). Results: 65 sessions with compaction, 223 boundaries, 28,847 facts. Compaction loses 68.5% of facts; user constraints 65.2%; retrieval recovers 60.8%. Vulnerability windows in 44.6% of sessions (29/65), 51 windows, 78 dropped constraints. Full comparison at `results/cross-harness-comparison.json`.
+- **Claude Code** — **DONE**. Session data found at `~/Library/Application Support/21st-desktop/claude-sessions/` (not `~/.claude/projects/` — that only has session-index.json metadata). Compaction mechanism: `system` record with `subtype: "compact_boundary"`, `compactMetadata.preTokens`, and a synthetic `user` message immediately after containing the summary (starts with "This session is being continued from a previous conversation..."). Parser: `claude_parser.py` (`ClaudeCodeLoader`). Results: 65 sessions with compaction, 223 boundaries, 27,945 facts. Compaction loses 73.6% of facts; user constraints 72.7%; keyword retrieval recovers 62.6%. Vulnerability windows in 44.6% of sessions (29/65), 51 windows, 76 dropped constraints. Full comparison at `results/cross-harness-comparison.json`.
 - **OpenCode** — `~/.local/share/opencode/storage/{session,message}/`, 13 sessions. Different storage shape: one JSON file per message keyed by session ID under a session directory, not a single chronological JSONL. No compaction-equivalent field found in a first pass.
 - **Codex (CLI)** — no session/rollout logs found on this machine at all.
 
@@ -131,11 +131,11 @@ Business-plan validation strategy (see `the private research vault`, "Immediate 
 |--------|----------|-------------|
 | Sessions with compaction | 115 | 65 |
 | Compaction boundaries | 213 | 223 |
-| Total facts extracted | 284,947 | 28,847 |
-| Compaction loss rate | 87.0% | 68.5% |
-| User constraint omission | 94.6% | 65.2% |
-| Retrieval recovery rate | 69.3% | 60.8% |
+| Total facts extracted | 170,209 | 27,945 |
+| Compaction loss rate | 86.0% | 73.6% |
+| User constraint omission | 96.5% | 72.7% |
+| Retrieval recovery rate | 63.6% | 62.6% |
 | Sessions with vuln windows | 14.8% (17/115) | 44.6% (29/65) |
-| Dropped constraints | 27 | 78 |
+| Dropped constraints | 26 | 76 |
 
 Note: Claude Code has fewer fact categories (2 vs 4) because `FactExtractor` depends on pi-agent-specific record fields for `file_reference` and `error_state`. The `assistant_finding` category dominates in both harnesses. The `--harness claude` flag on `afe scan`, `afe report`, and `afe vuln` selects the `ClaudeCodeLoader`.

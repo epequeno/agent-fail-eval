@@ -29,6 +29,7 @@ from agent_fail_eval.label import (
     generate_sample,
 )
 from agent_fail_eval.redactor import SessionRedactor
+from agent_fail_eval.attack import print_attack_report, run_all_variants
 
 console = Console()
 
