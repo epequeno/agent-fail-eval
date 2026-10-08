@@ -1,6 +1,6 @@
 # agent-fail-eval
 
-Coding-agent failure evaluation toolkit. Parses pi agent session logs to detect, evaluate, and report on long-session degradation: compaction loss, context rot, strategy-comparison failures, and harness-adversarial attacks.
+Coding-agent failure evaluation toolkit. Parses pi-agent and Claude Code session logs to detect, evaluate, and report on long-session degradation: compaction loss, context rot, strategy-comparison failures, and vulnerability windows.
 
 ## Quick Start
 
@@ -82,6 +82,63 @@ From 115 real pi-agent sessions, 213 compaction boundaries, 170,209 heuristic fa
 - Vulnerability windows: **17 of 115 sessions (14.8%)** have at least one compaction boundary that drops a behavioral or approval constraint absent from the summary — 21 windows, 26 dropped constraints. Report at `results/vuln-window-report.json`.
 - **Cross-harness validation**: compaction loss confirmed in a second harness. Claude Code (65 sessions, 223 boundaries, 28,847 facts): **68.5%** of facts omitted by compaction summaries; user constraints **65.2%** omitted; retrieval recovers **60.8%** of lost facts. Vulnerability windows in **44.6%** of sessions (29/65), 51 windows, 78 dropped constraints. Full comparison at `results/cross-harness-comparison.json`.
 
+
+## Methodology: What Counts as a Fact, and What the Numbers Mean
+
+The headline numbers — 96.5% user constraint omission, 86% overall fact loss — are only as meaningful as the definition of "fact." This section defends that definition, explains why keyword retrieval is the baseline, and scopes what the omission rate does and does not claim.
+
+### What is a "fact"?
+
+A **fact** is a discrete piece of information extracted from the compaction-dropped segment that the agent knew before compaction and might need after it. The extractor (`FactExtractor` in `evaluator.py`) pulls four categories from dropped records:
+
+| Category | Extracted from | What it captures | Example |
+|----------|--------------|------------------|---------|
+| `user_constraint` | User messages | Decisions, requirements, preferences, scope limits | "Don't push to main — use a feature branch" |
+| `file_reference` | Tool call arguments | File paths the agent read or modified | `/Users/example/project/src/main.rs` |
+| `error_state` | Tool results with `isError=True` | Build failures, test failures, runtime errors | "error: expected `&str`, found `String`" |
+| `assistant_finding` | Assistant text + tool result content | Key conclusions, API details, config values | "The rate limit is 100 req/min with a 429 backoff of 60s" |
+
+Extraction is **heuristic** (regex patterns, keyword filters, sentence splitting), not semantic. User messages are split into sentences; each sentence ≥10 chars that isn't a conversational acknowledgment becomes a `user_constraint`. File paths matching `/Users/` or `/home/` or `~/` in tool call arguments become `file_reference` facts. Tool results with `isError=True` become `error_state` facts. Assistant text and tool result content ≥50 chars become `assistant_finding` facts, with bare code fragments filtered out.
+
+Each fact carries `search_terms` — significant words extracted from the fact value, used for the retrieval strategy simulation. These are the terms that a naive keyword-search system would index.
+
+**Why heuristic, not model-based?** The goal is to measure information survival after compaction, not to build a perfect fact extractor. A heuristic extractor is reproducible, auditable, and has no model-specific biases. Its precision is measurable (68% of extracted facts are meaningful; 32% are noise), and the noise is evenly distributed across the survival analysis — it doesn't inflate the omission rate, because noise facts are just as likely to be omitted as real ones. A model-based extractor would need its own validation pipeline, and its errors would be harder to characterize. The heuristic approach trades precision for transparency.
+
+### Why keyword retrieval is a weak baseline (and why that's the point)
+
+The **retrieval strategy** simulates the simplest possible RAG system: after compaction, the agent has the summary plus a keyword search over the dropped segment's records. Matching uses term overlap — if ≥1 of the fact's search terms appears in a dropped record, the fact is "recovered." No embeddings, no reranking, no semantic matching, no query expansion.
+
+This is deliberately weak. The point is to establish a **floor** — the minimum a retrieval-augmented system could plausibly do. If even simple keyword retrieval recovers a fact, any real system (embeddings, reranking, LLM-based search) would too. The gap between this floor and 100% is the opportunity for better context management.
+
+| Harness | Facts lost after compaction | Recovered by keyword retrieval | Still lost |
+|---------|---------------------------|-------------------------------|-----------|
+| pi-agent | 86% | 69% of lost facts | 31% of lost facts unrecoverable |
+| Claude Code | 68.5% | 61% of lost facts | 39% of lost facts unrecoverable |
+
+For user constraints specifically, keyword retrieval recovers only **28.1%** of lost constraints (pi-agent). This is the worst-performing category — constraints are often phrased differently when referenced later ("use a feature branch" vs. "don't push to main"), so exact-term matching misses them. This is exactly the gap that embeddings + reranking would close, and it's why the keyword baseline matters: it shows where lexical matching fails and semantic matching is needed.
+
+### What 96.5% omission does and does not mean
+
+The most cited number from this project is that **96.5% of extracted user constraints from compaction-dropped segments are absent from the compaction summary**. This is precise but easy to misread.
+
+**What it means:**
+- Of the 1,531 user constraints the extractor found in segments that compaction dropped, 1,477 do not appear in the compaction summary by keyword match.
+- The labeling validation confirms this is exact: lost recall is 100% (every truly-lost fact is caught), lost precision is 92.9% (7 false alarms, all from `file_reference` keyword matching).
+
+**What it does NOT mean:**
+- It does **not** mean 96.5% of all user messages are lost. Only messages in compaction-dropped segments are counted. Messages in the kept portion of the session are still visible to the agent.
+- It does **not** mean every lost fact causes a task failure. Many constraints are one-time instructions ("use 4-space indentation") that are never needed again. The labeling study found only **7 high-impact truly-lost facts** out of 102 meaningful facts — the rest are low or medium impact.
+- It does **not** mean compaction summaries are useless. Summaries preserve some facts (14% overall, and more for `assistant_finding`). The loss is **systematic**, not random — user constraints are the most underrepresented category.
+
+**What it does suggest:**
+- Compaction summaries systematically underrepresent user intent. The agent's post-compaction context is biased toward what the model generated (assistant findings) and away from what the user specified (constraints).
+- The tail risk is real. The 7 high-impact lost facts include: don't-push constraints, region requirements, credential configurations, feature requirements, decision rules, and a keystore failure that blocks release. Each is a concrete scenario where compaction removed information that would have changed a downstream decision.
+- The gap is actionable. Keyword retrieval recovers 28% of lost user constraints; a better retrieval system (embeddings, reranking, or simply passing the full dropped segment) would recover more. The 96.5% omission rate is the problem size, not the solution claim.
+
+### Data freshness note
+
+The cross-harness comparison file (`results/cross-harness-comparison.json`) was generated before the v2 extractor noise filters were applied. Its pi-agent total fact count (284,947) reflects pre-v2 extraction; the README headline numbers (170,209 facts) reflect post-v2 extraction with noise filters. The loss and recovery rates are consistent between the two because noise facts are omitted at the same rate as real ones. The Claude Code numbers in the comparison file are unaffected (Claude Code extraction did not change between v1 and v2).
+
 ## Fact Labeling (Precision/Recall Validation)
 
 The `afe label` tool generates a stratified sample of 150 facts (category × compaction-status) for human labeling to measure extractor precision/recall.
@@ -161,20 +218,18 @@ This is a **single-operator case study**, not a controlled experiment. The resul
 - **Claude Code partial category coverage** — the FactExtractor's `file_reference` and `error_state` categories depend on pi-agent-specific record fields. Claude Code sessions produce only `user_constraint` and `assistant_finding` facts. Claude Code omission rates are therefore not directly comparable to pi-agent rates at the category level.
 - **REPL strategy is circular** — the full-history forensic query "recovers" 100% of facts by construction (search terms are derived from the facts themselves). This is an internal sanity-check upper bound, not evidence of a working mitigation. Do not cite next to real retrieval numbers.
 
-## Business Plan Connection
+## Research Context
 
+This project is the Phase 0 Evaluator Prototype from a broader research program on context management for coding agents. It provides prototype evidence that:
 
-This is the Phase 0 Evaluator Prototype from the business plan. It provides prototype evidence that:
-
-- Real pi-agent compaction summaries omit many extracted facts, including user constraints and error states
+- Real compaction summaries omit many extracted facts, including user constraints and error states
 - Retrieval-over-history has a measurable recovery gap, especially for user constraints
 - Full-history forensic query is a circular upper bound, not a proven deployed mitigation
 - Synthetic harness-adversarial omission fixtures are product-visible and reportable
-- Competitor teardown confirms the wedge is defensible — no existing tool measures compaction loss, fact survival, or context-strategy comparison
 
-## Research Connections
+Related research threads (notes in a private Obsidian vault):
 
-- rlm-switch — routing between passthrough and REPL
-- rlm-agents — context externalization for agent histories
-- harness-adversarial — H5a compaction information hiding
-- business-plan — product strategy, validation approach, and competitor teardown
+- **rlm-switch** — routing between passthrough and REPL context strategies
+- **rlm-agents** — context externalization for agent histories
+- **harness-adversarial** — H5a compaction information hiding as an attack class
+- **business-plan** — product strategy, validation approach, and competitor teardown
