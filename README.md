@@ -1,6 +1,18 @@
 # agent-fail-eval
 
-Coding-agent failure evaluation toolkit. Parses pi-agent and Claude Code session logs to detect, evaluate, and report on long-session degradation: compaction loss, context rot, strategy-comparison failures, and vulnerability windows.
+**What does context compaction actually throw away in real coding-agent sessions?** A measurement toolkit plus a two-harness study: parse pi-agent and Claude Code `.jsonl` session logs, extract the facts compaction dropped, and track which survive — in the summary, under keyword retrieval — and which dropped constraints open adversarial windows.
+
+**Status:** v2 study complete — 115 real pi-agent sessions (213 compaction boundaries, 170,209 facts after noise filtering) plus 65 Claude Code sessions (223 boundaries, 27,945 facts), with a 150-fact human-labeled extractor validation (pi) and an 85-fact pass (Claude). Aggregates committed under `results/` (regenerated 2026-10-08); per-session data stays private — it contains verbatim project text. See [Data freshness note](#data-freshness-note).
+
+**Scope & limitations:** single-operator case study, not a controlled experiment; heuristic extractor (68% precision, 67% category accuracy on pi — 27% on Claude); vulnerability-window counts are heuristic-classified, not human-validated; the full-history forensic query is a circular sanity-check upper bound, not a mitigation; omission is *sized*, harm is not established — TRACE-style replay work finds only a weak pre-boundary → post-compaction link. Full list: [Limitations](#limitations).
+
+## Headline results (as of 2026-10-08)
+
+- **Compaction summaries omit 86% (pi) / 73.6% (Claude) of extracted facts** — user constraints worst: **96.5%** (pi) / 72.7% (Claude) absent from summaries.
+- **Keyword retrieval — the deliberate weak baseline — recovers only 28.1% of lost user constraints** (pi): constraints get rephrased, so lexical matching misses them. That gap is where semantic retrieval has to earn its keep.
+- **14.8% of pi sessions (17/115) contain a vulnerability window** — a boundary that drops a behavioral or approval constraint absent from the summary. Claude Code: 44.6% (29/65).
+- **The omission rates are exact, not lower bounds:** human labeling gives lost recall 100% (every truly-lost fact is caught) and lost precision 92.9% (7 false alarms, all `file_reference`).
+- **7 high-impact truly-lost facts** in the labeled sample — don't-push constraints, region requirements, credential configs, decision rules, a keystore failure that blocks release.
 
 ## Quick Start
 
